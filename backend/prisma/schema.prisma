@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  name            String
+  password_hash   String
+  failed_attempts Int       @default(0)
+  locked_until    DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  workspace_members WorkspaceMember[]
+  tasks             Task[]            @relation("TaskAssignee")
+  created_tasks     Task[]            @relation("TaskCreator")
+  comments          Comment[]
+  activity_logs     ActivityLog[]
+  notifications     Notification[]
+  invite_tokens_sent InviteToken[]    @relation("InvitedBy")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+model Workspace {
+  id         String   @id @default(uuid())
+  name       String
+  created_by String   // ID của user đã tạo workspace
+  created_at DateTime @default(now())
+
+  members       WorkspaceMember[]
+  projects      Project[]
+  tasks         Task[]
+  notifications Notification[]
+  invite_tokens InviteToken[]
+}
+
+model WorkspaceMember {
+  id           String    @id @default(uuid())
+  workspace_id String
+  user_id      String
+  role         Role      @default(MEMBER)
+
+  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([workspace_id, user_id])
+}
+
+model Project {
+  id           String       @id @default(uuid())
+  workspace_id String
+  name         String       // Max 100 char
+  description  String?      // Max 500 char
+  color        String       @default("#4F46E5")
+  archived_at  DateTime?
+  created_at   DateTime     @default(now())
+  deleted_at   DateTime?
+
+  tasks     Task[]
+  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+}
+
+enum TaskStatus {
+  TO_DO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id           String       @id @default(uuid())
+  workspace_id String
+  project_id   String
+  title        String       // Max 200 chars
+  description  String?      // Max 5000 chars, lưu raw Markdown (sanitized)
+  status       TaskStatus   @default(TO_DO)
+  priority     TaskPriority @default(MEDIUM)
+  due_date     DateTime?
+  assignee_id  String?
+  created_by   String
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+  deleted_at   DateTime?
+
+  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  project   Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  assignee  User?     @relation("TaskAssignee", fields: [assignee_id], references: [id], onDelete: SetNull)
+  creator   User      @relation("TaskCreator", fields: [created_by], references: [id])
+
+  comments      Comment[]
+  activity_logs ActivityLog[]
+  notifications Notification[]
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  task_id    String
+  user_id    String
+  content    String   // Max 5000 chars, plain text sanitized
+  created_at DateTime @default(now())
+
+  task          Task           @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  notifications Notification[]
+}
+
+enum ActionType {
+  CREATED
+  UPDATED
+  STATUS_CHANGED
+  COMMENTED
+  DELETED
+}
+
+model ActivityLog {
+  id            String     @id @default(uuid())
+  task_id       String
+  user_id       String
+  action_type   ActionType
+  field_changed String?
+  old_value     String?
+  new_value     String?
+  created_at    DateTime   @default(now())
+
+  task Task @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_COMMENTED
+  TASK_MENTIONED
+  TASK_DUE_SOON
+  INVITE_ACCEPTED
+  REASSIGN_NEEDED
+}
+
+model Notification {
+  id           String           @id @default(uuid())
+  workspace_id String
+  user_id      String           // Recipient
+  type         NotificationType
+  task_id      String?
+  comment_id   String?
+  message      String
+  read_at      DateTime?
+  created_at   DateTime         @default(now())
+
+  user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  task      Task?     @relation(fields: [task_id], references: [id], onDelete: SetNull)
+  comment   Comment?  @relation(fields: [comment_id], references: [id], onDelete: SetNull)
+}
+
+model InviteToken {
+  id           String    @id @default(uuid())
+  workspace_id String
+  email        String
+  token        String    @unique @default(uuid())
+  role         Role      @default(MEMBER)
+  expires_at   DateTime
+  accepted_at  DateTime?
+  invited_by   String
+
+  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  inviter   User      @relation("InvitedBy", fields: [invited_by], references: [id], onDelete: Cascade)
+}

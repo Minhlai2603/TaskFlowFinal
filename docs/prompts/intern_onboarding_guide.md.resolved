@@ -1,0 +1,260 @@
+# TaskFlow: Intern Onboarding Guide (Technical Breakdown)
+
+Chào mừng bạn đến với team TaskFlow! Với vai trò là Senior Engineer, tôi sẽ giải thích cho bạn từng linh kiện trong "cỗ máy" TaskFlow này để bạn không chỉ biết code theo mẫu, mà còn hiểu tại sao chúng ta lại chọn chúng.
+
+---
+
+## 1. Frontend: Xây dựng Giao diện & Trải nghiệm
+
+### 1.1 Next.js 16 (App Router)
+- **What**: Một framework React mạnh mẽ hỗ trợ Server-side Rendering (SSR) và cấu trúc thư mục dựa trên route (`app/`).
+- **When**: Dùng làm khung xương cho toàn bộ ứng dụng web.
+- **Why**: Giúp SEO tốt hơn, tối ưu tốc độ tải trang đầu tiên và quản lý routing cực kỳ dễ dàng.
+- **How**: Tạo các thư mục trong `src/app`, mỗi thư mục là một URL (VD: `app/login/page.tsx`).
+- **Example**: Trang Dashboard `/app/my-tasks` sẽ được định nghĩa trong `src/app/my-tasks/page.tsx`.
+
+### 1.2 React Server Components (RSC) vs Client Components
+- **Server Components (RSC)**: Chạy trên server, không có JavaScript ở client. Tốt cho dữ liệu tĩnh và bảo mật.
+- **Client Components (`use client`)**: Chạy ở trình duyệt, cho phép tương tác (nút bấm, nhập liệu).
+
+> [!NOTE]
+> **So sánh: SSR (Server-Side Rendering) và CSR (Client-Side Rendering)**
+> - **SSR**: Server chuẩn bị sẵn file HTML đầy đủ và gửi cho trình duyệt. Người dùng thấy nội dung ngay lập tức.
+> - **CSR**: Server gửi một file HTML trống và một "đống" JavaScript. Trình duyệt phải chạy JS đó mới render ra được giao diện.
+> - **Tại sao chọn SSR?** Để trang web load nhanh hơn ở lần đầu và hỗ trợ **SEO** tốt hơn.
+
+#### Ví dụ So Sánh SSR và CSR:
+
+| Đặc điểm | **Server-Side Rendering (SSR)** | **Client-Side Rendering (CSR)** |
+|---|---|---|
+| **Nội dung** | HTML được tạo sẵn trên Server | HTML trống, trình duyệt tự vẽ bằng JS |
+| **Code mẫu** | **Server Component** (không có `'use client'`) | **Client Component** (có `'use client'`) |
+
+**1. Ví dụ SSR (Lấy data trực tiếp từ DB):**
+```tsx
+// src/app/projects/page.tsx
+import { db } from "@/lib/db";
+
+export default async function ProjectsPage() {
+  // API gọi trực tiếp trên Server - Bảo mật và Nhanh
+  const projects = await db.project.findMany();
+  return (
+    <ul>
+      {projects.map(p => <li key={p.id}>{p.name}</li>)}
+    </ul>
+  );
+}
+```
+
+**2. Ví dụ CSR (Tương tác thời gian thực):**
+```tsx
+// src/components/Counter.tsx
+"use client";
+import { useState } from "react";
+
+export function Counter() {
+  // Cần dùng useState nên BẮT BUỘC phải là Client Component
+  const [count, setCount] = useState(0);
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      Số lần bấm: {count}
+    </button>
+  );
+}
+```
+
+### 1.3 SEO (Search Engine Optimization) là gì?
+- **What**: Tối ưu hóa công cụ tìm kiếm. Giúp trang web của chúng ta leo lên trang đầu của Google.
+- **Why**: Nếu Google "đọc" được nội dung trang web dễ dàng, nó sẽ giới thiệu trang đó cho nhiều người hơn.
+- **Connection to SSR**: Google có các "robot" (crawlers) đi quét nội dung. SSR giúp các con robot này thấy text ngay lập tức mà không cần đợi chạy JavaScript phức tạp.
+
+### 1.4 Khi nào dùng `'use client'`? (Kèm ví dụ)
+Bạn chỉ dùng chỉ thị này khi cần các tính năng "sống" của trình duyệt. 
+- **When**: 
+    - Khi dùng Event Listeners (`onClick`, `onChange`, `onSubmit`).
+    - Khi dùng React Hooks (`useState`, `useEffect`, `useReducer`).
+    - Khi dùng các API của trình duyệt (`window`, `localStorage`).
+- **Example**: Một nút bấm tăng số (Counter)
+  ```tsx
+  'use client'; // Bắt buộc phải có dòng này ở đầu file
+
+  import { useState } from 'react';
+
+  export function Counter() {
+    const [count, setCount] = useState(0);
+
+    return (
+      <button onClick={() => setCount(count + 1)}>
+        Bạn đã bấm {count} lần
+      </button>
+    );
+  }
+  ```
+
+### 1.5 React Hooks: Từ điển chi tiết & Ví dụ
+React cung cấp các "móc" (hooks) để chúng ta can thiệp vào vòng đời của component. Dưới đây là những loại quan trọng nhất:
+
+#### A. Nhóm Cơ Bản (Basic Hooks)
+1. **`useState`**: Lưu trữ dữ liệu có thể thay đổi và làm giao diện vẽ lại (render).
+   - *Ví dụ*: Lưu giá trị nhập vào ô input.
+   ```tsx
+   const [text, setText] = useState("");
+   ```
+
+2. **`useEffect`**: Chạy code khi component "hiện ra", "biến mất" hoặc khi một dữ liệu nào đó thay đổi.
+   - *Ví dụ*: Tự động lấy dữ liệu từ API khi trang vừa load xong.
+   ```tsx
+   useEffect(() => { fetchApi(); }, []); // Chạy 1 lần duy nhất
+   ```
+
+3. **`useContext`**: Lấy dữ liệu từ "kho chung" (Provider) mà không cần truyền qua từng cấp cha-con.
+   - *Ví dụ*: Lấy thông tin User đang đăng nhập ở bất cứ đâu trong app.
+   ```tsx
+   const user = useContext(UserContext);
+   ```
+
+#### B. Nhóm Nâng Cao (Additional Hooks)
+4. **`useRef`**: Giống như một "chiếc hộp" lưu giá trị mà khi thay đổi **không** làm giao diện render lại. Hoặc dùng để "chạm" vào thẻ HTML (DOM).
+   - *Ví dụ*: Tự động focus vào ô nhập liệu.
+   ```tsx
+   const inputRef = useRef<HTMLInputElement>(null);
+   const handleFocus = () => inputRef.current?.focus();
+   ```
+
+5. **`useMemo`**: Ghi nhớ kết quả của một phép tính phức tạp. Chỉ tính lại khi dữ liệu đầu vào thay đổi.
+   - *Ví dụ*: Lọc danh sách 10,000 task dựa trên từ khóa tìm kiếm (tránh lọc lại vô ích).
+   ```tsx
+   const filteredTasks = useMemo(() => tasks.filter(t => t.name.includes(query)), [tasks, query]);
+   ```
+
+6. **`useCallback`**: Ghi nhớ một hàm (function). Giúp tránh tạo ra hàm mới mỗi lần render, tối ưu cho các component con.
+   - *Ví dụ*: Hàm xử lý khi nhấn nút Xóa, truyền xuống danh sách task.
+   ```tsx
+   const onDelete = useCallback((id) => { deleteApi(id); }, []);
+   ```
+
+7. **`useReducer`**: Cách quản lý state nâng cao, dùng khi state có cấu trúc phức tạp hoặc nhiều hành động thay đổi.
+   - *Ví dụ*: Quản lý giỏ hàng (thêm, bớt, xóa, cập nhật số lượng).
+   ```tsx
+   const [state, dispatch] = useReducer(cartReducer, initialCart);
+   // dispatch({ type: 'ADD_ITEM', payload: item });
+   ```
+
+#### C. Custom Hooks (Tự định nghĩa)
+Bạn có thể tự tạo ra Hook của riêng mình bằng cách kết hợp các Hook trên.
+- *Ví dụ*: `useLocalStorage(key)` để tự động lưu và lấy dữ liệu từ bộ nhớ trình duyệt.
+
+### 1.6 TanStack Query (React Query) v5 & Ví dụ
+- **What**: Thư viện quản lý dữ liệu từ server. Nó không chỉ fetch data mà còn lo việc: cache, synchronize, và cập nhật UI.
+- **Example**: Lấy danh sách task từ API.
+  ```tsx
+  'use client';
+  import { useQuery } from '@tanstack/react-query';
+  import { getTasks } from '@/services/task-service';
+
+  export function TaskList() {
+    // useQuery nhận vào một object cấu hình
+    const { data, isLoading, isError } = useQuery({
+      queryKey: ['tasks'], // Định danh duy nhất cho bộ nhớ cache
+      queryFn: getTasks,   // Hàm thực hiện gọi API (trả về Promise)
+    });
+
+    if (isLoading) return <div>Đang tải task...</div>;
+    if (isError) return <div>Lỗi khi lấy dữ liệu!</div>;
+
+    return (
+      <ul>
+        {data?.map((task) => (
+          <li key={task.id}>{task.title}</li>
+        ))}
+      </ul>
+    );
+  }
+  ```
+- **Giải thích**:
+    - `queryKey`: Giống như "tên file" trong ổ cứng cache. Nếu bạn gọi lại component này với cùng key, nội dung sẽ được lấy ra ngay lập tức mà không cần gọi API lại.
+    - `isLoading`: Trạng thái khi đang đợi server trả về.
+    - `queryFn`: Nơi bạn thực hiện các lệnh fetch hoặc axios.
+
+### 1.7 Tailwind CSS & shadcn/ui
+- **What**: Tailwind là thư viện CSS utility-first; shadcn/ui là bộ component UI (built trên Radix UI) mà chúng ta có toàn quyền sở hữu code.
+- **When**: Dùng cho mọi thành phần giao diện.
+- **Why**: Tailwind giúp code CSS nhanh mà không cần rời file HTML; shadcn/ui mang lại giao diện chuyên nghiệp, nhất quán mà không tốn công custom từ đầu.
+- **How**: Dùng các class như `flex`, `p-4`, `text-red-500` và copy các component từ shadcn vào thư mục `components/ui`.
+- **Example**: ` <Button className="bg-indigo-600">Lưu ngay</Button>`.
+
+---
+
+## 2. Backend: Xử lý Logic & Dữ liệu
+
+### 2.1 Prisma ORM
+- **What**: Công cụ giúp tương tác với database bằng code JavaScript/TypeScript thay vì viết SQL thuần.
+- **When**: Dùng khi cần tạo bảng, truy vấn, hoặc cập nhật dữ liệu vào PostgreSQL.
+- **Why**: Tránh lỗi cú pháp SQL, hỗ trợ tự động gợi ý code (IntelliSense) và quản lý phiên bản database (migration) chuyên nghiệp.
+- **How**: Định nghĩa model trong `schema.prisma` và dùng `prisma.task.create(...)`.
+- **Example**: Tạo một task mới:
+  ```ts
+  await prisma.task.create({
+    data: { title: "Học Prisma", status: "TO_DO", workspace_id: "..." }
+  });
+  ```
+
+### 2.2 JWT Authentication & bcrypt
+- **What**: bcrypt là thuật toán mã hóa mật khẩu; JWT (JSON Web Token) là "thẻ thông hành" dạng mã hóa để xác thực người dùng.
+- **When**: bcrypt dùng khi user đăng ký/đăng nhập; JWT dùng để bảo vệ các API private.
+- **Why**: bcrypt bảo vệ mật khẩu ngay cả khi database bị lộ; JWT giúp server không cần lưu session (stateless), phù hợp với quy mô lớn.
+- **How**: Mã hóa mật khẩu bằng `bcrypt.hash()` trước khi lưu; gửi JWT trong header `Authorization: Bearer <token>`.
+- **Example**: User đăng nhập xong nhận được một chuỗi mã hóa dài. Mỗi lần gọi API lấy task, user gửi kèm chuỗi đó để chứng minh mình là ai.
+
+### 2.3 Row-level Isolation (Cô lập dữ liệu)
+- **What**: Kỹ thuật đảm bảo dữ liệu của Workspace A không bao giờ bị lộ sang Workspace B.
+- **When**: Áp dụng cho TẤT CẢ các truy vấn database liên quan đến dữ liệu người dùng.
+- **Why**: Đây là quy tắc bảo mật sống còn. Nếu hổng, một công ty có thể thấy task của công ty đối thủ.
+- **How**: Luôn thêm điều kiện `where: { workspace_id: current_id }` trong mọi câu lệnh Prisma.
+- **Example**: `const tasks = await prisma.task.findMany({ where: { workspace_id: req.workspaceId } });`
+
+### 2.4 Database Indexing (Mục lục dữ liệu)
+- **What**: Index là một cấu trúc dữ liệu giúp database tìm kiếm thông tin cực nhanh mà không cần quét qua toàn bộ các hàng trong bảng.
+- **Analogy**: Giống như **Mục lục** của một cuốn sách. Để tìm chương 5, bạn nhìn mục lục để thấy nó ở trang 120, thay vì lật từng trang từ 1 đến 120 để tìm.
+- **Why**: Khi bảng có hàng triệu bản ghi, nếu không có Index, database sẽ mất rất nhiều thời gian để tìm kiếm. Index giúp giảm thời gian truy vấn từ vài giây xuống còn vài miligiây.
+- **When**: Dùng trên các cột (fields) mà chúng ta thường xuyên dùng để tìm kiếm hoặc sắp xếp (VD: `email`, `workspace_id`, `created_at`).
+- **How (Prisma)**: Khai báo `@@index` hoặc `@unique` trong file `schema.prisma`.
+- **Example**:
+  ```prisma
+  model Task {
+    id           String   @id @default(uuid())
+    workspace_id String
+    title        String
+    // ... các trường khác
+
+    @@index([workspace_id]) // Tạo index để tìm task theo workspace nhanh hơn
+  }
+  ```
+
+### 2.5 Soft Delete (Xóa mềm)
+Cách chúng ta tổ chức dự án
+
+### 3.1 Feature-based Folder Structure
+- **What**: Tổ chức thư mục theo "Tính năng" thay vì theo "Loại file".
+- **When**: Dùng để phân chia source code frontend và backend.
+- **Why**: Giảm thiểu việc phải nhảy qua nhảy lại giữa các thư mục cách xa nhau; dễ dàng mở rộng và bảo trì khi dự án lớn dần.
+- **How**: Thư mục `features/tasks/` sẽ chứa cả Component, Service, Hook liên quan đến task.
+- **Example**: Thay vì tìm component ở `/components` và logic ở `/hooks`, bạn chỉ cần vào `/features/kanban/` để thấy mọi thứ về bảng Kanban.
+
+### 3.2 RBAC (Role-Based Access Control)
+- **What**: Kiểm soát quyền truy cập dựa trên vai trò (Admin, Manager, Member).
+- **When**: Dùng khi thực hiện các hành động nhạy cảm như xóa project, mời thành viên.
+- **Why**: Đảm bảo đúng người đúng quyền, tránh việc nhân viên (Member) vô tình xóa nhầm dự án của sếp (Admin).
+- **How**: Kiểm tra `user.role` từ database hoặc token trước khi xử lý logic.
+- **Example**: Nút "Xóa Project" chỉ hiển thị và chỉ hoạt động nếu `role` của bạn là `ADMIN`.
+
+---
+
+## 4. Testing: Đảm bảo chất lượng
+
+- **Unit Test**: Test từng hàm nhỏ (VD: hàm tính % hoàn thành task).
+- **Integration Test**: Test xem API có trả về đúng data từ Database không.
+- **E2E Test**: Chạy một trình duyệt ảo để click thử như người dùng thật (đăng nhập -> tạo task -> kéo thả).
+
+> [!IMPORTANT]
+> **Lời nhắc cho bạn:** Đừng cố học hết tất cả trong một ngày. Hãy bắt đầu từ **Next.js** và **Tailwind** để làm UI, sau đó tìm hiểu **Prisma** để làm việc với dữ liệu. Tôi luôn sẵn sàng giải đáp bất kỳ đoạn code nào bạn thấy khó hiểu!
