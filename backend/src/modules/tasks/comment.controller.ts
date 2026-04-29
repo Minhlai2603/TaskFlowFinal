@@ -3,7 +3,7 @@ import { CommentService } from './comment.service';
 
 export const createComment = async (req: Request, res: Response) => {
   try {
-    const { taskId } = req.params;
+    const taskId = req.params.taskId as string;
     const { content } = req.body;
     const userId = (req as any).user.userId;
     const workspaceId = req.headers['x-workspace-id'] as string;
@@ -27,7 +27,7 @@ export const createComment = async (req: Request, res: Response) => {
 
 export const getComments = async (req: Request, res: Response) => {
   try {
-    const { taskId } = req.params;
+    const taskId = req.params.taskId as string;
     const comments = await CommentService.getComments(taskId);
     res.json({ success: true, data: comments });
   } catch (error: any) {

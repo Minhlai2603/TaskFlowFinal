@@ -16,7 +16,7 @@ export class ProjectController {
 
   static async getProject(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const workspaceId = (req as any).workspaceId;
       const project = await ProjectService.getProjectById(id, workspaceId);
       res.json({ success: true, data: project });
@@ -45,7 +45,7 @@ export class ProjectController {
 
   static async updateProject(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const workspaceId = (req as any).workspaceId;
       const role = (req as any).userRole;
 
@@ -63,7 +63,7 @@ export class ProjectController {
 
   static async archiveProject(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const workspaceId = (req as any).workspaceId;
       const project = await ProjectService.archiveProject(id, workspaceId);
       res.json({ success: true, data: project });
@@ -74,7 +74,7 @@ export class ProjectController {
 
   static async deleteProject(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const workspaceId = (req as any).workspaceId;
       const role = (req as any).userRole;
 

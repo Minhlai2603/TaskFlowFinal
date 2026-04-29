@@ -25,7 +25,7 @@ export class TaskController {
 
   static async getTask(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const workspaceId = (req as any).workspaceId;
       const task = await TaskService.getTaskById(id, workspaceId);
       res.json({ success: true, data: task });
@@ -48,7 +48,7 @@ export class TaskController {
 
   static async updateTask(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const workspaceId = (req as any).workspaceId;
       const userId = (req as any).user.userId;
       const validatedData = updateTaskSchema.parse(req.body);
@@ -61,7 +61,7 @@ export class TaskController {
 
   static async deleteTask(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const workspaceId = (req as any).workspaceId;
       await TaskService.softDeleteTask(id, workspaceId);
       res.json({ success: true, message: 'Đã xóa task thành công' });
